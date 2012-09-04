@@ -1,0 +1,14 @@
+Logfile initialized
+[INFO] logfile = /Users/Nollfyranoll/Documents/Titanium_Studio_Workspace/SI3D/build.log
+[DEBUG] /Library/Application Support/Titanium/mobilesdk/osx/2.1.0.GA/android/builder.py simulator SI3D /Users/Nollfyranoll/Documents/Titanium_Studio_Workspace/Android SDK /Users/Nollfyranoll/Documents/Titanium_Studio_Workspace/SI3D se.nollfyranoll.si3d 13 HVGA 
+[INFO] Building SI3D for Android ... one moment
+[INFO] Titanium SDK version: 2.1.0 (06/28/12 12:16 6e3cab6)
+[DEBUG] Waiting for device to be ready ...
+[TRACE] adb devices returned 0 devices/emulators
+[TRACE] adb devices returned 0 devices/emulators
+[TRACE] adb devices returned 0 devices/emulators
+[TRACE] adb devices returned 0 devices/emulators
+[TRACE] adb devices returned 0 devices/emulators
+[TRACE] adb devices returned 0 devices/emulators
+[ERROR] Timed out waiting for emulator to be ready, you may need to close the emulator and try again
+[DEBUG] signal caught: 15

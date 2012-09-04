@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Drawing</title>
+    <meta name="viewport" content="width = device-width, initial-scale = 1, minimum-scale = 1, maximum-scale = 1, user-scalable = no" />
+    <style>
+      body, html {
+      	margin:0;
+      	padding:0;
+      	background:#000;
+      }
+    	#si3dimg {
+    		display:none;
+    	}
+    	#wait {
+    		display:none;
+    		padding:20px;
+    		background-color:#000;
+    		border:solid 1px #fff;
+    		border-radius: 10px;
+    		text-align:center;
+    		position:absolute;
+    		width:50px;
+    		height:50px;
+    		color:#fff;
+    	}
+    </style>
+    <script type="text/javascript">
+      var drawcanvas, drawcontext;
+      var drawData = [];
+      var currStyle = {
+      	depth: 180,
+      	width: 50
+      };
+      var nofDataItems = 0;
+      var currDataItem;
+ 
+			/* 
+			 * Initialise canvas tag
+			 */
+      function init() {
+	      drawcanvas = document.getElementById('drawcanvas');
+	      drawcanvas.width = window.innerWidth;
+	      drawcanvas.height = window.innerHeight;
+	      var wait = document.getElementById('wait');
+	      wait.style.left = (window.innerWidth/2 - 50/2) + 'px';
+	      wait.style.top = (window.innerHeight/2 - 50/2) + 'px';
+	      Ti.App.fireEvent('getCanvasSize', {'size': {width:window.innerWidth, height:window.innerHeight}});
+	      drawcontext = drawcanvas.getContext('2d');
+        drawcontext.lineCap = 'round';
+        setDrawingStyle(currStyle.depth, currStyle.width);
+				drawcontext.drawing = false;
+      	drawcontext.fillStyle = "#808080";
+      	drawcontext.fillRect(0, 0, drawcanvas.width, drawcanvas.height);
+
+        drawcanvas.addEventListener( 'touchmove', touchMove);
+        drawcanvas.addEventListener( 'touchstart', touchStart);
+        drawcanvas.addEventListener( 'touchend', touchEnd);
+      }
+
+      /*
+       * Return scerrn coordinates for the given event
+       */      
+			function getCoord(event){
+				if (event.targetTouches) 
+				  event = event.targetTouches[0];
+			  if (event.pageX != null && event.pageY != null) 
+				  return {X: event.pageX, Y: event.pageY};
+				var element = (!document.compatMode || document.compatMode == 'CSS1Compat') ? document.documentElement : document.body;
+				return {X: event.clientX + element.scrollLeft, Y: event.clientY + element.scrollTop};
+			}
+
+      /*
+       * User starts drawing
+       */
+      function touchStart(event) {
+	      drawcontext.beginPath();
+				drawcontext.drawing = true;
+				var coord = getCoord(event);
+				drawcontext.moveTo(coord.X, coord.Y);
+				currDataItem = {
+					style:{width: currStyle.width, depth: currStyle.depth},
+					points:[{x:coord.X, y:coord.Y}]
+				};
+				event.preventDefault();
+				event.stopPropagation();
+      }
+ 
+      /*
+       * User moves finger
+       */
+      function touchMove(event) {
+      	if (drawcontext.drawing) {
+					event.preventDefault();
+					event.stopPropagation();
+  				var coord = getCoord(event);
+					drawcontext.lineTo(coord.X, coord.Y);
+					drawcontext.stroke();
+					drawcontext.moveTo(coord.X, coord.Y);
+					currDataItem.points.push({x:coord.X, y:coord.Y});
+				} 
+     	}
+ 
+      /*
+       * User finalizes drawing
+       */
+      function touchEnd(event) {
+      	nofDataItems++;
+      	drawData[nofDataItems-1] = currDataItem;
+      	if (drawData.length > nofDataItems) 
+      		drawData.length = nofDataItems;
+				drawcontext.drawing = false;
+      }
+      
+      function setDrawingStyle(adepth, awidth) {
+      	var changed = currStyle.width != awidth || currStyle.depth != adepth;
+      	if (awidth) {
+	      	currStyle.width = awidth;
+	        drawcontext.lineWidth = awidth;
+	      }
+	      if (adepth) {
+	      	currStyle.depth = adepth;
+	        drawcontext.strokeStyle = 'rgb(' + adepth + ', ' + adepth + ', ' + adepth + ')';
+	      }
+        return changed;
+      }
+
+      /*
+       * Called from drawwin.js. Returns the current drawing information in string form
+       */
+      function getDrawData() {
+      	return JSON.stringify(drawData);
+      }
+      
+      /*
+       * Clears and redraws based on the given drawing information
+       */
+      function openImg(json) {
+      	drawData = JSON.parse(json);
+      	nofDataItems = drawData.length;
+      	redraw();
+      }
+      
+      /*
+       * Clears and redraws based on the current drawing information
+       */
+      function redraw() {
+      	function nextStrokeDiffers(idx) {
+      		if (idx == nofDataItems -1) return true;
+      		if (drawData[idx + 1].style.depth != currStyle.depth) return true;
+      		if (drawData[idx + 1].style.width != currStyle.width) return true;
+      		return false;
+      	}
+	      startLengthy();
+	      setTimeout(function(){
+	      	drawcontext.fillStyle = "#808080";
+	      	drawcontext.fillRect(0, 0, drawcanvas.width, drawcanvas.height);
+	      	for (var i=0; i < nofDataItems; i++) {
+						var newStyle = setDrawingStyle(drawData[i].style.depth, drawData[i].style.width);
+						
+						if (newStyle || i == 0)
+			        drawcontext.beginPath();
+						drawcontext.moveTo(drawData[i].points[0].x, drawData[i].points[0].y);
+						for (var j=1; j < drawData[i].points.length; j++) {
+							drawcontext.lineTo(drawData[i].points[j].x, drawData[i].points[j].y);
+							drawcontext.moveTo(drawData[i].points[j].x, drawData[i].points[j].y);
+						}
+						if (nextStrokeDiffers(i)) 
+						  drawcontext.stroke();
+	      	} 
+		      Ti.App.fireEvent('setDrawingStyle', {'style': currStyle});
+		      endLengthy();
+	      }, 100);
+      }
+      
+      function startLengthy() {
+      	document.getElementById('wait').style.display = 'block';
+      }
+      
+      function endLengthy() {
+      	document.getElementById('wait').style.display = 'none';
+      }
+
+      function newDrawing() {
+      	drawData = [];
+      	nofDataItems = 0;
+      	redraw();
+      }
+
+      function undo() {
+      	if (nofDataItems > 0) {
+	      	nofDataItems--;
+	      	redraw();
+	      }
+      }
+ 
+      function redo() {
+      	if (drawData.length > nofDataItems) {
+      		nofDataItems++;
+      		redraw();
+      	}
+      }
+      
+      /*
+       * Called by drawwin.js. Returns a bitmapped version of the drawing
+       */
+      function getDrawing() {
+        return drawcanvas.toDataURL("image/png");
+      }
+      
+      /*
+       * Called from drawwin.js. Hides si3d and shows drawing
+       */
+      function showDrawing() {
+      	var si3dimg = document.getElementById('si3dimg');
+      	drawcanvas.style.display = 'block';
+      	si3dimg.style.display = 'none';
+      }
+      
+      /*
+       * Called from drawwin.js. Shows si3d and hides drawing
+       */
+      function showSi3d(url) {
+      	var si3dimg = document.getElementById('si3dimg');
+      	si3dimg.src = url;
+      	drawcanvas.style.display = 'none';
+      	si3dimg.style.display = 'block';
+      }
+      
+    </script>        
+  </head>
+  <body onload="init()">
+  	<div id='wait'><img src='img/wait.gif' /><br />Wait...</div>
+    <canvas id='drawcanvas'>Drawing not supported</canvas>
+    <img id='si3dimg' src='' />
+  </body>
+</html>
