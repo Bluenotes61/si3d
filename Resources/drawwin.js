@@ -217,13 +217,13 @@ function createDrawView() {
 }
 
 function hasLicense() {
-	return checkIfProductPurchased("si3Dsharing");
+	return checkIfProductPurchased("Share_si3D");
 	//return true;
 }
 
 function purchaseLicense() {
 	if (Storekit.canMakePayments) {
-		requestProduct("si3Dsharing", function(product){
+		requestProduct("Share_si3D", function(product){
 			purchaseProduct(product);
 		});
 	}
@@ -299,98 +299,76 @@ function openDrawing(arow) {
  * Dialog callback. Call server to create si3d
  */
 function createSi3D() {
-	var wait = showWait();
-	
-  var drawing = drawView.evalJS("getDrawing()").replace("data:image/png;base64,","");
-	var decoded = Ti.Utils.base64decode(drawing);
-	
-	var xhr = Titanium.Network.createHTTPClient();
-  xhr.onload = function(e) {
-  	var res = e.source.responseText.split(';');
-  	if (res[0].indexOf('http') != 0) {
-	  	wait.hideMe();
-  		alert("An error occurred: " + res[0]);
-  	}
-  	else {
-	  	si3DPropsDlg.props.si3durl = res[0];
-	  	if (userId.length == 0) {
-	  		userId = res[1];
-			  var dbsql = Ti.Database.open('si3dDB');
-			  dbsql.execute("insert into userid(id) values('" + userId + "')");
-			  dbsql.close();
+	try {
+		var wait = showWait();
+		
+	  var drawing = drawView.evalJS("getDrawing()").replace("data:image/png;base64,","");
+		var decoded = Ti.Utils.base64decode(drawing);
+		
+		var xhr = Titanium.Network.createHTTPClient();
+	  xhr.onload = function(e) {
+	  	var res = e.source.responseText.split(';');
+	  	if (res[0].indexOf('http') != 0) {
+		  	wait.close();
+	  		alert("An error occurred: " + res[0]);
 	  	}
-	  	drawToolbar.setVisible(false);
-	  	sliderBar.setVisible(false);
-	  	si3dToolbar.setVisible(true);
-	  	wait.hideMe();
-	  	drawView.evalJS("showSi3d('" + si3DPropsDlg.props.si3durl + "')");
+	  	else {
+		  	si3DPropsDlg.props.si3durl = res[0];
+		  	if (userId.length == 0) {
+		  		userId = res[1];
+				  var dbsql = Ti.Database.open('si3dDB');
+				  dbsql.execute("insert into userid(id) values('" + userId + "')");
+				  dbsql.close();
+		  	}
+		  	drawToolbar.setVisible(false);
+		  	sliderBar.setVisible(false);
+		  	si3dToolbar.setVisible(true);
+		  	wait.close();
+		  	drawView.evalJS("showSi3d('" + si3DPropsDlg.props.si3durl + "')");
+		  }
+	  };
+	  xhr.onerror = function(err){
+	    alert("An error occurred: " + err);
+		  wait.close();
 	  }
-  };
-  xhr.onerror = function(err){
-    alert("An error occurred: " + err);
-	  wait.hideMe();
-  }
-  xhr.open('POST','http://si3d.040.se/si3d.aspx');
-  var img = null;
-  if (!si3DPropsDlg.props.random) {
-    img = si3DPropsDlg.props.image;
-	  img = img.imageAsCropped({x:0, y:0, width:si3DPropsDlg.props.fieldWidth, height:si3DPropsDlg.props.height});
+	  xhr.open('POST','http://si3d.040.se/si3d.aspx');
+	  var img = null;
+	  if (!si3DPropsDlg.props.random) {
+	    img = si3DPropsDlg.props.image;
+		  img = img.imageAsCropped({x:0, y:0, width:si3DPropsDlg.props.fieldWidth, height:si3DPropsDlg.props.height});
+		}
+	  xhr.send({'drawing':decoded, "template":img, "noffields": si3DPropsDlg.props.nofFields, 'userid': userId, 'todelete': (hasLicense() ? "0" : "1")});
 	}
-  xhr.send({'drawing':decoded, "template":img, "noffields": si3DPropsDlg.props.nofFields, 'userid': userId, 'todelete': (hasLicense() ? "0" : "1")});
+	catch(err) {
+		alert("An error occurred: " + err.message);
+		wait.close();
+	}
 }
+
 
 /*
  * Open an activity indicator
  */
 function showWait()  {
-  var indWin = null;
-	if (Ti.Platform.osname != 'android')  {
-		indWin = Titanium.UI.createWindow({
-			height:150,
-			width:150
-		});
-		var indView = Titanium.UI.createView({
-			height:150,
-			width:150,
-			backgroundColor:'#000',
-			borderRadius:10,
-			opacity:0.8
-		});
-		indWin.add(indView);
-	}
 
-	var actInd = Titanium.UI.createActivityIndicator({
-		style:Titanium.UI.iPhone && Titanium.UI.iPhone.ActivityIndicatorStyle.BIG,
-		height:30,
-		width:30
+	var loader = Titanium.UI.createWindow({  
+    title:'Laddar',
+    backgroundColor:'#333',
+    borderRadius:5,
+    width:150,
+    height:150,
+    opacity:0.9,
+    fullScreen:false
 	});
-
-	if (Ti.Platform.osname != 'android') {
-		indWin.add(actInd);
-
-		var message = Titanium.UI.createLabel({
-			text:'Generating...',
-			color:'#fff',
-			width:'auto',
-			height:'auto',
-			font:{fontSize:20,fontWeight:'bold'},
-			bottom:20
-		});
-		indWin.add(message);
-		indWin.open();
-	} 
-	else {
-		actInd.message = "Generating...";
-	}
+	var actInd = Titanium.UI.createActivityIndicator({
+	    color:'#fff',
+	    message:'Generating...'
+	});
 	actInd.show();
-	
-	actInd.hideMe = function() {
-		actInd.hide();
-		if (Ti.Platform.osname != 'android') {
-			indWin.close({opacity:0,duration:500});
-		}
-	}
-	return actInd;
+	loader.add(actInd);
+	loader.open();
+
+  return loader;
 }
 
 

@@ -6,7 +6,7 @@ function getTextButton(left, text, color) {
 		backgroundImage:(color == 'brown' ? "img/btn_bg_brown.png" : "img/btn_bg_blue.png"),
 		backgroundSelectedImage:(color == 'brown' ? "img/btn_bg_brown_pressed.png" : "img/btn_bg_blue_pressed.png"),
 		left: left,
-	  width: '120dp',
+	  width: (Ti.Platform.osname == 'ipad' ? '120dp' : '100dp'),
 	  height: '40dp',
 	  color:(color == 'brown' ? '#fff' : '#666'),
 	  selectedColor:(color == 'brown' ? '#fff' : '#000'),
@@ -57,22 +57,22 @@ var BaseDialog = function() {
     	obj.title.setText(atitle);
     };
     
-	  var dbb = Ti.UI.createView({
+	  obj.dbb = Ti.UI.createView({
 	  	layout: 'horizontal',
 	  	top:parseInt(height)-(Ti.Platform.osname == 'ipad' ? 60 : 50),
 	  	left:parseInt(width)/2 - 260/2
 	  });
-	  obj.dlg.add(dbb);
+	  obj.dlg.add(obj.dbb);
 	  if (okText.length > 0) {
 	  	var okbtn = getTextButton('0dp', okText, "brown");
 			okbtn.addEventListener('click', okCallback);
-		  dbb.add(okbtn);
+		  obj.dbb.add(okbtn);
 	  
 	  	var cancelbtn = getTextButton('20dp', 'CANCEL', 'blue');
 			cancelbtn.addEventListener('click', function(){
 				obj.close();
 			});
-		  dbb.add(cancelbtn);
+		  obj.dbb.add(cancelbtn);
 		}
 	}
 	
@@ -226,6 +226,9 @@ var Si3DPropsDlg = function(okCallback) {
 		okCallback();
 	});
 
+  if (Ti.Platform.osname != 'ipad') 
+    parent.dbb.setLeft('160dp');
+
   this.open = function() {
 		btnRandom.setEnabled(!obj.props.random);
 		btnImage.setEnabled(obj.props.random);
@@ -247,6 +250,7 @@ var Si3DPropsDlg = function(okCallback) {
     top:(Ti.Platform.osname == 'ipad' ? '95dp' : '80dp'),
     left:'45dp',
     width:'100dp',
+    visibleItems:5,
     selectionIndicator:true
   });
   var data = [];
@@ -472,7 +476,7 @@ var PurchaseDlg = function(okCallback) {
 	});
 	
 	var text =	Ti.UI.createLabel({
-		text:'To be able to save your generated si3D stereograms or share them with your friends, you need a si3D sharing license.',
+		text:'To get your si3D stereograms in higher resolution and to be able to save them or share them with your friends, you need a si3D sharing license.',
 		top:'60dp',
 		color:"#fff",
 		left:'20dp',

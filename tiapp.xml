@@ -16,11 +16,11 @@
     <sdk-version>2.1.0.GA</sdk-version>
     <id>se.nollfyranoll.si3d</id>
     <name>SI3D</name>
-    <version>1.0</version>
-    <publisher>Nollfyranoll</publisher>
+    <version>1.0.3</version>
+    <publisher>040 Internet AB</publisher>
     <url>http://040.se</url>
     <description>not specified</description>
-    <copyright>2012 by Nollfyranoll</copyright>
+    <copyright>2012 by 040 Internet AB</copyright>
     <icon>appicon.png</icon>
     <persistent-wifi>false</persistent-wifi>
     <prerendered-icon>false</prerendered-icon>
